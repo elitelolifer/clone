@@ -17,7 +17,7 @@ jobs:
       - name: Build App (Unsigned)
         run: |
           xcodebuild clean build \
-            -project "MT5HistoryClone1.xcodeproj" \
+            -project "MT5HistoryClone1/MT5HistoryClone1.xcodeproj" \
             -scheme "MT5HistoryClone1" \
             -configuration Release \
             -sdk iphoneos \
