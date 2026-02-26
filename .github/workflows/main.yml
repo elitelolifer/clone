@@ -8,32 +8,64 @@ on:
 jobs:
   build:
     name: Build iOS App
-    runs-on: macos-latest
+    # نکته ۱: استفاده از macos-15 برای دسترسی به جدیدترین Xcode
+    runs-on: macos-26
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Xcode Version
+        run: |
+          # نمایش نسخه اکس‌کد برای اطمینان
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+
       - name: Build App (Unsigned)
         run: |
+          # پیدا کردن فایل پروژه به صورت خودکار
+          PROJECT_FILE=$(find . -name "*.xcodeproj" -maxdepth 2 | head -n 1)
+          
+          if [ -z "$PROJECT_FILE" ]; then
+            echo "Error: No .xcodeproj file found!"
+            exit 1
+          fi
+          
+          echo "Building project: $PROJECT_FILE"
+
           xcodebuild clean build \
-            -project "MT5HistoryClone1/MT5HistoryClone1.xcodeproj" \
+            -project "$PROJECT_FILE" \
             -scheme "MT5HistoryClone1" \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath ./build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO
 
       - name: Package into IPA
         run: |
           mkdir Payload
-          mv build/Build/Products/Release-iphoneos/*.app Payload/
-          zip -r App.ipa Payload
+          
+          # پیدا کردن فایل .app ساخته شده در پوشه build
+          APP_PATH=$(find ./build -name "*.app" | head -n 1)
+          
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: .app file not found in build directory!"
+            exit 1
+          fi
+          
+          echo "Packaging app from: $APP_PATH"
+          
+          # کپی کردن به جای جابجا کردن (ایمن‌تر است)
+          cp -r "$APP_PATH" Payload/
+          
+          # ساخت فایل IPA
+          zip -r MT5HistoryClone1.ipa Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Unsigned-App-IPA
-          path: App.ipa
+          name: MT5HistoryClone1-Unsigned
+          path: MT5HistoryClone1.ipa
